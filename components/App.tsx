@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import type { Col, Doc } from "@/lib/model";
-import { demoAoa, docFromAoa, fmt, headerLabel, mergeCols, sortDoc } from "@/lib/model";
+import { docFromAoa, fmt, headerLabel, mergeCols, sortDoc } from "@/lib/model";
 import { readWorkbook, exportDoc, type Workbook } from "@/lib/xlsx-io";
 import { useHistory, usePrefs, useTheme } from "@/lib/store";
 import { ContextMenu, PromptDialog, ToastProvider, useToast, type MenuItem } from "./ui";
@@ -82,12 +82,6 @@ function App() {
     },
     [reset, toast],
   );
-
-  const openDemo = () => {
-    setWb(null);
-    reset(docFromAoa(demoAoa(), "דוגמה.xlsx"));
-    toast("נטענו נתוני הדגמה (שמות בדויים)", "info");
-  };
 
   useEffect(() => {
     const over = (e: DragEvent) => {
@@ -317,7 +311,7 @@ function App() {
         </header>
 
         {!doc ? (
-          <Landing onOpen={() => fileInput.current?.click()} onDemo={openDemo} busy={busy} />
+          <Landing onOpen={() => fileInput.current?.click()} busy={busy} />
         ) : (
           <div className="workspace">
             <aside className="sidebar">
@@ -477,7 +471,7 @@ function Preview({ doc, prefs, rows }: { doc: Doc; prefs: import("@/lib/model").
   );
 }
 
-function Landing({ onOpen, onDemo, busy }: { onOpen: () => void; onDemo: () => void; busy: boolean }) {
+function Landing({ onOpen, busy }: { onOpen: () => void; busy: boolean }) {
   return (
     <div className="landing">
       <div className="aurora" aria-hidden />
@@ -499,9 +493,6 @@ function Landing({ onOpen, onDemo, busy }: { onOpen: () => void; onDemo: () => v
           </span>
           <b>{busy ? "טוען…" : "גררו לכאן קובץ Excel או לחצו לבחירה"}</b>
           <small>xlsx · xls · csv · ods</small>
-        </button>
-        <button className="link center" onClick={onDemo}>
-          או נסו עם נתוני הדגמה ←
         </button>
         <div className="features">
           <Feature icon={<Pencil size={18} />} title="עריכה כמו באקסל" text="הקלדה, ניווט בחיצים, ביטול וחזרה" />
