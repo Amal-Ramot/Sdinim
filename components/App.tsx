@@ -489,7 +489,7 @@ function Landing({ onOpen, onDemo, busy }: { onOpen: () => void; onDemo: () => v
         <h1>
           מהגיליון של המשו״ב
           <br />
-          <span className="grad">לדף מודפס מושלם</span> — בשניות.
+          <span className="grad">לסדין מודפס</span> — בשניות.
         </h1>
         <p className="lead">
           גוררים קובץ אקסל, מסדרים עמודות בגרירה, צובעים ציונים לפי טווחים ומדפיסים הכל על דף אחד.
