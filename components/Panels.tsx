@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import { DndContext, PointerSensor, KeyboardSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToParent } from "./dnd-modifiers";
@@ -8,8 +7,6 @@ import {
   Eye,
   EyeOff,
   GripVertical,
-  Merge,
-  Palette,
   Plus,
   Printer,
   RotateCcw,
@@ -22,44 +19,21 @@ import type { Layout } from "./PrintPage";
 
 // ================= Columns =================
 
-function ColItem({
-  col,
-  selected,
-  onSelect,
-  onToggleHidden,
-  onToggleColor,
-  onRename,
-}: {
-  col: Col;
-  selected: boolean;
-  onSelect: (v: boolean) => void;
-  onToggleHidden: () => void;
-  onToggleColor: () => void;
-  onRename: () => void;
-}) {
+function ColItem({ col, onToggleHidden, onRename }: { col: Col; onToggleHidden: () => void; onRename: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: col.id });
   const lines = headerLabel(col.name, "clean").split("\n");
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={`col-item${col.hidden ? " is-hidden" : ""}${isDragging ? " dragging" : ""}${selected ? " selected" : ""}`}
+      className={`col-item${col.hidden ? " is-hidden" : ""}${isDragging ? " dragging" : ""}`}
     >
       <button className="grip" {...attributes} {...listeners} aria-label="גרירה לשינוי סדר">
         <GripVertical size={16} />
       </button>
-      <input type="checkbox" className="chk" checked={selected} onChange={(e) => onSelect(e.target.checked)} aria-label="בחירה" />
-      <button className="col-name" onDoubleClick={onRename} title={col.name} onClick={() => onSelect(!selected)}>
+      <button className="col-name" onDoubleClick={onRename} title={col.name}>
         <span>{lines[0]}</span>
         {lines.length > 1 && <small>{lines.slice(1).join(" · ")}</small>}
-      </button>
-      <button
-        className={`icon-btn sm${col.color ? " accent" : ""}`}
-        onClick={onToggleColor}
-        title={col.color ? "צביעה פעילה" : "ללא צביעה"}
-        aria-pressed={col.color}
-      >
-        <Palette size={15} />
       </button>
       <button className="icon-btn sm" onClick={onToggleHidden} title={col.hidden ? "הצג" : "הסתר"} aria-pressed={!col.hidden}>
         {col.hidden ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -72,16 +46,13 @@ export function ColumnsPanel({
   doc,
   commit,
   moveCol,
-  onMerge,
   onRename,
 }: {
   doc: Doc;
   commit: (m: (d: Doc) => void) => void;
   moveCol: (a: string, b: string) => void;
-  onMerge: (ids: string[]) => void;
   onRename: (col: Col) => void;
 }) {
-  const [selected, setSelected] = useState<string[]>([]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -89,43 +60,17 @@ export function ColumnsPanel({
   const onDragEnd = (e: DragEndEvent) => {
     if (e.over && e.active.id !== e.over.id) moveCol(String(e.active.id), String(e.over.id));
   };
-  const sel = selected.filter((id) => doc.cols.some((c) => c.id === id));
-  const setAll = (fn: (c: Col) => void) => commit((d) => d.cols.forEach(fn));
   const hiddenCount = doc.cols.filter((c) => c.hidden).length;
 
   return (
     <div className="panel">
       <div className="row-actions">
-        <button className="chip" onClick={() => setAll((c) => (c.hidden = false))}>
+        <button className="chip" onClick={() => commit((d) => d.cols.forEach((c) => (c.hidden = false)))}>
           <Eye size={14} /> הצג הכל {hiddenCount > 0 && <em>{hiddenCount}</em>}
         </button>
       </div>
 
-      {sel.length > 0 && (
-        <div className="selection-bar">
-          <span>{sel.length} נבחרו</span>
-          <button className="chip" disabled={sel.length < 2} onClick={() => (onMerge(sel), setSelected([]))}>
-            <Merge size={14} /> מיזוג
-          </button>
-          <button className="chip" onClick={() => commit((d) => d.cols.forEach((c) => sel.includes(c.id) && (c.hidden = true)))}>
-            <EyeOff size={14} /> הסתרה
-          </button>
-          <button
-            className="chip danger"
-            onClick={() => {
-              commit((d) => (d.cols = d.cols.filter((c) => !sel.includes(c.id))));
-              setSelected([]);
-            }}
-          >
-            <Trash2 size={14} /> מחיקה
-          </button>
-          <button className="link" onClick={() => setSelected([])}>
-            ביטול
-          </button>
-        </div>
-      )}
-
-      <p className="hint">גררו לשינוי סדר · לחיצה כפולה לשינוי שם · סמנו כמה עמודות כדי למזג</p>
+      <p className="hint">גררו לשינוי סדר · לחיצה כפולה לשינוי שם · העין מסתירה או מציגה</p>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd} modifiers={[restrictToParent]}>
         <SortableContext items={doc.cols.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           <ul className="col-list">
@@ -133,10 +78,7 @@ export function ColumnsPanel({
               <ColItem
                 key={c.id}
                 col={c}
-                selected={sel.includes(c.id)}
-                onSelect={(v) => setSelected((s) => (v ? [...s, c.id] : s.filter((x) => x !== c.id)))}
                 onToggleHidden={() => commit((d) => d.cols.forEach((x) => x.id === c.id && (x.hidden = !x.hidden)))}
-                onToggleColor={() => commit((d) => d.cols.forEach((x) => x.id === c.id && (x.color = !x.color)))}
                 onRename={() => onRename(c)}
               />
             ))}

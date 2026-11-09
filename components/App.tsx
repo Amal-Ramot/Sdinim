@@ -340,7 +340,6 @@ function App() {
                     doc={doc}
                     commit={commit}
                     moveCol={moveCol}
-                    onMerge={doMerge}
                     onRename={setRename}
                   />
                 )}
