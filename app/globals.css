@@ -1440,6 +1440,15 @@ input[type="range"] {
   background-clip: text;
   color: transparent;
 }
+.hero h1.lead-title {
+  margin: 0;
+  max-width: 720px;
+  font-size: clamp(20px, 2.6vw, 28px);
+  line-height: 1.5;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--text);
+}
 .lead {
   margin: 0;
   max-width: 600px;
