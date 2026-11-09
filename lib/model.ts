@@ -284,58 +284,6 @@ export function recomputeSummaryFor(doc: Doc, col: Col) {
   });
 }
 
-export interface CleanReport {
-  empty: number;
-  constant: number;
-  id: number;
-  merged: number;
-  conflicts: number;
-}
-
-export function smartClean(doc: Doc): CleanReport {
-  const rep: CleanReport = { empty: 0, constant: 0, id: 0, merged: 0, conflicts: 0 };
-  const dataRows = doc.summary.map((s, r) => (s ? -1 : r)).filter((r) => r >= 0);
-  for (const col of doc.cols) {
-    if (col.hidden) continue;
-    const vals = dataRows.map((r) => col.cells[r]);
-    const nonEmpty = vals.filter((v) => !isEmpty(v));
-    if (!nonEmpty.length) {
-      col.hidden = true;
-      rep.empty++;
-      continue;
-    }
-    if (dataRows.length > 2 && nonEmpty.length === vals.length && new Set(nonEmpty.map(String)).size === 1) {
-      col.hidden = true;
-      rep.constant++;
-      continue;
-    }
-    const looksId =
-      /^(ת\.?ז|ת["״]ז|תעודת זהות|מספר זהות)/.test(col.name.trim()) ||
-      (nonEmpty.length > 3 && nonEmpty.every((v) => /^\d{8,9}$/.test(String(v))));
-    if (looksId) {
-      col.hidden = true;
-      rep.id++;
-    }
-  }
-  // merge grade columns that belong to the same subject/course
-  const groups = new Map<string, string[]>();
-  for (const col of doc.cols) {
-    if (col.hidden || !col.color) continue;
-    const k = subjectKey(col.name);
-    if (!k) continue;
-    groups.set(k, [...(groups.get(k) || []), col.id]);
-  }
-  for (const [k, ids] of groups) {
-    if (ids.length < 2) continue;
-    const res = mergeCols(doc, ids, k);
-    if (res) {
-      rep.merged += ids.length;
-      rep.conflicts += res.conflicts;
-    }
-  }
-  return rep;
-}
-
 export function sortDoc(doc: Doc, id: string, dir: 1 | -1) {
   const col = doc.cols.find((c) => c.id === id);
   if (!col) return;

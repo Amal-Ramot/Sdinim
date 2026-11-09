@@ -5,7 +5,6 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalList
 import { restrictToParent } from "./dnd-modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  Calculator,
   Eye,
   EyeOff,
   GripVertical,
@@ -15,7 +14,6 @@ import {
   Printer,
   RotateCcw,
   Trash2,
-  WandSparkles,
 } from "lucide-react";
 import type { Col, Doc, Prefs, Rule } from "@/lib/model";
 import { RULE_PRESETS, headerLabel, ruleCounts, uid, withIds } from "@/lib/model";
@@ -74,18 +72,14 @@ export function ColumnsPanel({
   doc,
   commit,
   moveCol,
-  onSmartClean,
   onMerge,
   onRename,
-  onRecompute,
 }: {
   doc: Doc;
   commit: (m: (d: Doc) => void) => void;
   moveCol: (a: string, b: string) => void;
-  onSmartClean: () => void;
   onMerge: (ids: string[]) => void;
   onRename: (col: Col) => void;
-  onRecompute: () => void;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const sensors = useSensors(
@@ -101,22 +95,9 @@ export function ColumnsPanel({
 
   return (
     <div className="panel">
-      <button className="hero-action" onClick={onSmartClean}>
-        <span className="hero-ic">
-          <WandSparkles size={18} />
-        </span>
-        <span>
-          <b>ניקוי חכם בלחיצה</b>
-          <small>מסתיר עמודות ריקות, קבועות ות.ז, ומאחד קבוצות של אותו מקצוע</small>
-        </span>
-      </button>
-
       <div className="row-actions">
         <button className="chip" onClick={() => setAll((c) => (c.hidden = false))}>
           <Eye size={14} /> הצג הכל {hiddenCount > 0 && <em>{hiddenCount}</em>}
-        </button>
-        <button className="chip" onClick={onRecompute} title="חישוב מחדש של שורת הממוצע בתחתית">
-          <Calculator size={14} /> חשב ממוצעים
         </button>
       </div>
 

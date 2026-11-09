@@ -23,11 +23,10 @@ import {
   Trash2,
   Undo2,
   Upload,
-  WandSparkles,
   X,
 } from "lucide-react";
 import type { Col, Doc } from "@/lib/model";
-import { demoAoa, docFromAoa, fmt, headerLabel, mergeCols, recomputeSummaryFor, smartClean, sortDoc } from "@/lib/model";
+import { demoAoa, docFromAoa, fmt, headerLabel, mergeCols, sortDoc } from "@/lib/model";
 import { readWorkbook, exportDoc, type Workbook } from "@/lib/xlsx-io";
 import { useHistory, usePrefs, useTheme } from "@/lib/store";
 import { ContextMenu, PromptDialog, ToastProvider, useToast, type MenuItem } from "./ui";
@@ -156,19 +155,6 @@ function App() {
     [commit],
   );
 
-  const doSmartClean = () => {
-    if (!doc) return;
-    const next = structuredClone(doc);
-    const r = smartClean(next);
-    commit((d) => Object.assign(d, next));
-    const parts = [r.empty && `${r.empty} ריקות`, r.constant && `${r.constant} קבועות`, r.id && "ת.ז"].filter(Boolean);
-    const msg = [parts.length ? `הוסתרו: ${parts.join(", ")}` : "", r.merged ? `אוחדו ${r.merged} עמודות לפי מקצוע` : ""]
-      .filter(Boolean)
-      .join(" · ");
-    toast(msg || "הטבלה כבר נקייה ✨");
-    if (r.conflicts) toast(`שימו לב: ${r.conflicts} תאים הכילו יותר מציון אחד — נשמר הראשון`, "warn");
-  };
-
   const doMerge = (ids: string[]) => {
     if (!doc) return;
     const next = structuredClone(doc);
@@ -177,12 +163,6 @@ function App() {
     commit((d) => Object.assign(d, next));
     toast(`${ids.length} עמודות מוזגו לעמודה אחת`);
     if (res.conflicts) toast(`${res.conflicts} שורות הכילו כמה ערכים — נשמר הראשון`, "warn");
-  };
-
-  const recompute = () => {
-    if (!doc?.summary.some(Boolean)) return toast("לא נמצאה שורת ממוצע בטבלה", "info");
-    commit((d) => d.cols.forEach((c) => c.color && recomputeSummaryFor(d, c)));
-    toast("שורת הממוצע חושבה מחדש");
   };
 
   const headerMenu = (col: Col, x: number, y: number) => {
@@ -360,10 +340,8 @@ function App() {
                     doc={doc}
                     commit={commit}
                     moveCol={moveCol}
-                    onSmartClean={doSmartClean}
                     onMerge={doMerge}
                     onRename={setRename}
-                    onRecompute={recompute}
                   />
                 )}
                 {tab === "colors" && <ColorsPanel doc={doc} prefs={prefs} rows={rows} update={update} commit={commit} />}
@@ -527,7 +505,7 @@ function Landing({ onOpen, onDemo, busy }: { onOpen: () => void; onDemo: () => v
           או נסו עם נתוני הדגמה ←
         </button>
         <div className="features">
-          <Feature icon={<WandSparkles size={18} />} title="ניקוי חכם" text="איחוד קבוצות מקצוע, הסתרת ריקות ות.ז" />
+          <Feature icon={<Pencil size={18} />} title="עריכה כמו באקסל" text="הקלדה, ניווט בחיצים, ביטול וחזרה" />
           <Feature icon={<Columns3 size={18} />} title="גרירה והזזה" text="סידור, הסתרה, מיזוג ושינוי שם" />
           <Feature icon={<Palette size={18} />} title="צביעה לפי טווח" text="רמזור ציונים עם מקרא וספירה" />
           <Feature icon={<Printer size={18} />} title="דף אחד, מלא" text="התאמה אוטומטית לגודל וכיוון הדף" />
