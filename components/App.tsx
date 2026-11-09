@@ -17,6 +17,7 @@ import {
   Redo2,
   Search,
   ShieldCheck,
+  Sparkles,
   Sun,
   Table2,
   Trash2,
@@ -482,7 +483,17 @@ function Landing({ onOpen, onDemo, busy }: { onOpen: () => void; onDemo: () => v
     <div className="landing">
       <div className="aurora" aria-hidden />
       <section className="hero">
-        <h1 className="lead-title">גוררים קובץ אקסל, מסדרים עמודות בגרירה, צובעים ציונים לפי טווחים ומדפיסים הכל על דף אחד.</h1>
+        <span className="eyebrow">
+          <Sparkles size={14} /> חדש · עורך ציונים חכם
+        </span>
+        <h1>
+          מהגיליון של המשו״ב
+          <br />
+          <span className="grad">לדף מודפס מושלם</span> — בשניות.
+        </h1>
+        <p className="lead">
+          גוררים קובץ אקסל, מסדרים עמודות בגרירה, צובעים ציונים לפי טווחים ומדפיסים הכל על דף אחד.
+        </p>
         <button className="dropzone" onClick={onOpen} disabled={busy}>
           <span className="dz-ic">
             <Upload size={26} />
