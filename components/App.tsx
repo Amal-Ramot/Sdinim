@@ -482,7 +482,7 @@ function Landing({ onOpen, busy }: { onOpen: () => void; busy: boolean }) {
         <h1>
           מהגיליון של המשו״ב
           <br />
-          <span className="grad">לסדין מועצות מודפס</span> — בשניות.
+          <span className="grad">לסדין מודפס למועצות</span> — בשניות.
         </h1>
         <p className="lead">
           גוררים קובץ אקסל, מסדרים עמודות בגרירה, צובעים ציונים לפי טווחים ומדפיסים הכל על דף אחד.
