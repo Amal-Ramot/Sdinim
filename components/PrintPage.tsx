@@ -1,7 +1,7 @@
 "use client";
 import { useLayoutEffect, useRef } from "react";
 import type { Doc, Prefs } from "@/lib/model";
-import { RULE_KEY, SET_LABEL, cellColors, fmtCell, headerLabel, ruleCounts, type RuleSet } from "@/lib/model";
+import { cellColors, fmtCell, headerLabel, ruleCounts } from "@/lib/model";
 
 export const PAPER_MM: Record<Prefs["paper"], [number, number]> = {
   A4: [210, 297],
@@ -47,9 +47,6 @@ export default function PrintPage({
 
   const vis = doc.cols.filter((c) => !c.hidden);
   const counts = ruleCounts(doc, prefs, rows);
-  const legendSets = (["grade", "attend", "absent"] as RuleSet[]).filter(
-    (set) => prefs[RULE_KEY[set]].length > 0 && vis.some((c) => c.color && (c.kind ?? "grade") === set),
-  );
 
   useLayoutEffect(() => {
     const run = () => {
@@ -131,21 +128,18 @@ export default function PrintPage({
             ))}
           </tbody>
         </table>
-        {prefs.showLegend &&
-          legendSets.map((set) => (
-            <footer key={set} className="print-legend">
-              {legendSets.length > 1 && <strong>{SET_LABEL[set]}:</strong>}
-              {prefs[RULE_KEY[set]].map((r) => (
-                <span key={r.id} className="lg">
-                  <i style={{ background: prefs.colorMode === "text" ? r.fg : r.bg, borderColor: r.fg }} />
-                  {r.label ? `${r.label} ` : ""}
-                  {Math.min(r.from, r.to)}–{Math.max(r.from, r.to)}
-                  {set === "grade" ? "" : "%"}
-                  <b>({counts.get(r.id) || 0})</b>
-                </span>
-              ))}
-            </footer>
-          ))}
+        {prefs.showLegend && prefs.rules.length > 0 && vis.some((c) => c.color) && (
+          <footer className="print-legend">
+            {prefs.rules.map((r) => (
+              <span key={r.id} className="lg">
+                <i style={{ background: prefs.colorMode === "text" ? r.fg : r.bg, borderColor: r.fg }} />
+                {r.label ? `${r.label} ` : ""}
+                {Math.min(r.from, r.to)}–{Math.max(r.from, r.to)}
+                <b>({counts.get(r.id) || 0})</b>
+              </span>
+            ))}
+          </footer>
+        )}
       </div>
     </div>
   );

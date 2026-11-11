@@ -10,12 +10,11 @@ export interface Col {
   hidden: boolean;
   /** whether color rules apply to this column */
   color: boolean;
-  /** percentage column: attendance (high is good) or absence/lateness (high is bad) */
+  /** percentage column (attendance, absence, lateness): shown with a percent sign */
   kind?: PctKind;
 }
 
 export type PctKind = "attend" | "absent";
-export type RuleSet = "grade" | PctKind;
 
 export interface Doc {
   title: string;
@@ -44,8 +43,6 @@ export type Orient = "auto" | "portrait" | "landscape";
 
 export interface Prefs {
   rules: Rule[];
-  rulesAttend: Rule[];
-  rulesAbsent: Rule[];
   colorMode: ColorMode;
   round: boolean;
   headerMode: HeaderMode;
@@ -97,27 +94,6 @@ export const RULE_PRESETS: Record<string, { name: string; rules: Omit<Rule, "id"
 
 export const withIds = (rules: Omit<Rule, "id">[]): Rule[] => rules.map((r) => ({ ...r, id: uid("r") }));
 
-export const PCT_DEFAULTS: Record<PctKind, Omit<Rule, "id">[]> = {
-  attend: [
-    { from: 0, to: 69, bg: "#fecaca", fg: "#991b1b", label: "נמוכה" },
-    { from: 70, to: 84, bg: "#fef08a", fg: "#854d0e", label: "בינונית" },
-    { from: 85, to: 100, bg: "#bfdbfe", fg: "#1e3a8a", label: "גבוהה" },
-  ],
-  absent: [
-    { from: 0, to: 10, bg: "#bfdbfe", fg: "#1e3a8a", label: "תקין" },
-    { from: 11, to: 20, bg: "#fef08a", fg: "#854d0e", label: "למעקב" },
-    { from: 21, to: 100, bg: "#fecaca", fg: "#991b1b", label: "חריג" },
-  ],
-};
-
-export const RULE_KEY: Record<RuleSet, "rules" | "rulesAttend" | "rulesAbsent"> = {
-  grade: "rules",
-  attend: "rulesAttend",
-  absent: "rulesAbsent",
-};
-
-export const SET_LABEL: Record<RuleSet, string> = { grade: "ציונים", attend: "נוכחות %", absent: "חיסור / איחור %" };
-
 export function pctKind(name: string): PctKind | undefined {
   if (/נוכחות/.test(name)) return "attend";
   if (/חיסור|חסור|היעדר|העדר|איחור/.test(name)) return "absent";
@@ -126,8 +102,6 @@ export function pctKind(name: string): PctKind | undefined {
 
 export const DEFAULT_PREFS: Prefs = {
   rules: withIds(RULE_PRESETS.three.rules),
-  rulesAttend: withIds(PCT_DEFAULTS.attend),
-  rulesAbsent: withIds(PCT_DEFAULTS.absent),
   colorMode: "bg",
   round: true,
   headerMode: "full",
@@ -192,11 +166,11 @@ export function headerLabel(name: string, mode: HeaderMode): string {
   return lines.join("\n");
 }
 
-export function ruleFor(prefs: Prefs, v: Cell | undefined, kind?: PctKind): Rule | null {
+export function ruleFor(prefs: Prefs, v: Cell | undefined): Rule | null {
   let n = toNum(v);
   if (n === null) return null;
   if (prefs.round) n = Math.round(n);
-  for (const r of prefs[RULE_KEY[kind ?? "grade"]]) {
+  for (const r of prefs.rules) {
     const lo = Math.min(r.from, r.to);
     const hi = Math.max(r.from, r.to);
     if (n >= lo && n <= hi) return r;
@@ -206,7 +180,7 @@ export function ruleFor(prefs: Prefs, v: Cell | undefined, kind?: PctKind): Rule
 
 export function cellColors(prefs: Prefs, col: Col, v: Cell | undefined): { background?: string; color?: string } | null {
   if (!col.color) return null;
-  const r = ruleFor(prefs, v, col.kind);
+  const r = ruleFor(prefs, v);
   if (!r) return null;
   if (prefs.colorMode === "bg") return { background: r.bg, color: "#0f172a" };
   if (prefs.colorMode === "text") return { color: r.fg };
@@ -389,7 +363,7 @@ export function ruleCounts(doc: Doc, prefs: Prefs, rows: number[]) {
     if (col.hidden || !col.color) continue;
     for (const r of rows) {
       if (doc.summary[r]) continue;
-      const rule = ruleFor(prefs, col.cells[r], col.kind);
+      const rule = ruleFor(prefs, col.cells[r]);
       if (rule) counts.set(rule.id, (counts.get(rule.id) || 0) + 1);
     }
   }
