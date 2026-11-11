@@ -5,7 +5,7 @@ import { SortableContext, horizontalListSortingStrategy, useSortable } from "@dn
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, EllipsisVertical } from "lucide-react";
 import type { Col, Doc, Prefs } from "@/lib/model";
-import { cellColors, fmt, headerLabel, normalizeInput } from "@/lib/model";
+import { cellColors, fmt, fmtCell, headerLabel, normalizeInput } from "@/lib/model";
 
 interface Props {
   doc: Doc;
@@ -96,7 +96,7 @@ export default function SheetTable({ doc, prefs, rows, commit, onHeaderMenu, onC
     if (col && edit.draft !== old) {
       commit((d) => {
         const c = d.cols.find((x) => x.id === col.id);
-        if (c) c.cells[r] = normalizeInput(edit.draft);
+        if (c) c.cells[r] = normalizeInput(edit.draft, !!c.kind);
       });
     }
     setEdit(null);
@@ -215,7 +215,7 @@ export default function SheetTable({ doc, prefs, rows, commit, onHeaderMenu, onC
                           }}
                         />
                       ) : (
-                        fmt(v)
+                        fmtCell(c, v)
                       )}
                     </td>
                   );

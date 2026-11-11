@@ -10,7 +10,12 @@ export interface Col {
   hidden: boolean;
   /** whether color rules apply to this column */
   color: boolean;
+  /** percentage column: attendance (high is good) or absence/lateness (high is bad) */
+  kind?: PctKind;
 }
+
+export type PctKind = "attend" | "absent";
+export type RuleSet = "grade" | PctKind;
 
 export interface Doc {
   title: string;
@@ -39,6 +44,8 @@ export type Orient = "auto" | "portrait" | "landscape";
 
 export interface Prefs {
   rules: Rule[];
+  rulesAttend: Rule[];
+  rulesAbsent: Rule[];
   colorMode: ColorMode;
   round: boolean;
   headerMode: HeaderMode;
@@ -90,8 +97,37 @@ export const RULE_PRESETS: Record<string, { name: string; rules: Omit<Rule, "id"
 
 export const withIds = (rules: Omit<Rule, "id">[]): Rule[] => rules.map((r) => ({ ...r, id: uid("r") }));
 
+export const PCT_DEFAULTS: Record<PctKind, Omit<Rule, "id">[]> = {
+  attend: [
+    { from: 0, to: 69, bg: "#fecaca", fg: "#991b1b", label: "נמוכה" },
+    { from: 70, to: 84, bg: "#fef08a", fg: "#854d0e", label: "בינונית" },
+    { from: 85, to: 100, bg: "#bfdbfe", fg: "#1e3a8a", label: "גבוהה" },
+  ],
+  absent: [
+    { from: 0, to: 10, bg: "#bfdbfe", fg: "#1e3a8a", label: "תקין" },
+    { from: 11, to: 20, bg: "#fef08a", fg: "#854d0e", label: "למעקב" },
+    { from: 21, to: 100, bg: "#fecaca", fg: "#991b1b", label: "חריג" },
+  ],
+};
+
+export const RULE_KEY: Record<RuleSet, "rules" | "rulesAttend" | "rulesAbsent"> = {
+  grade: "rules",
+  attend: "rulesAttend",
+  absent: "rulesAbsent",
+};
+
+export const SET_LABEL: Record<RuleSet, string> = { grade: "ציונים", attend: "נוכחות %", absent: "חיסור / איחור %" };
+
+export function pctKind(name: string): PctKind | undefined {
+  if (/נוכחות/.test(name)) return "attend";
+  if (/חיסור|חסור|היעדר|העדר|איחור/.test(name)) return "absent";
+  return undefined;
+}
+
 export const DEFAULT_PREFS: Prefs = {
   rules: withIds(RULE_PRESETS.three.rules),
+  rulesAttend: withIds(PCT_DEFAULTS.attend),
+  rulesAbsent: withIds(PCT_DEFAULTS.absent),
   colorMode: "bg",
   round: true,
   headerMode: "full",
@@ -128,8 +164,19 @@ export function fmt(v: Cell | undefined): string {
   return String(v);
 }
 
-export function normalizeInput(s: string): Cell {
-  const t = s.trim();
+/** Like toNum, but also accepts a trailing percent sign ("92%"). */
+export function pctNum(v: Cell | undefined): number | null {
+  return typeof v === "string" ? toNum(v.trim().replace(/\s*%$/, "")) : toNum(v);
+}
+
+/** Display text of a cell, with a percent sign in percentage columns. */
+export function fmtCell(col: Col, v: Cell | undefined): string {
+  const t = fmt(v);
+  return col.kind && t !== "" && toNum(v) !== null ? `${t}%` : t;
+}
+
+export function normalizeInput(s: string, pct = false): Cell {
+  const t = pct ? s.trim().replace(/\s*%$/, "") : s.trim();
   const n = toNum(t);
   return n === null ? t : n;
 }
@@ -145,11 +192,11 @@ export function headerLabel(name: string, mode: HeaderMode): string {
   return lines.join("\n");
 }
 
-export function ruleFor(prefs: Prefs, v: Cell | undefined): Rule | null {
+export function ruleFor(prefs: Prefs, v: Cell | undefined, kind?: PctKind): Rule | null {
   let n = toNum(v);
   if (n === null) return null;
   if (prefs.round) n = Math.round(n);
-  for (const r of prefs.rules) {
+  for (const r of prefs[RULE_KEY[kind ?? "grade"]]) {
     const lo = Math.min(r.from, r.to);
     const hi = Math.max(r.from, r.to);
     if (n >= lo && n <= hi) return r;
@@ -159,7 +206,7 @@ export function ruleFor(prefs: Prefs, v: Cell | undefined): Rule | null {
 
 export function cellColors(prefs: Prefs, col: Col, v: Cell | undefined): { background?: string; color?: string } | null {
   if (!col.color) return null;
-  const r = ruleFor(prefs, v);
+  const r = ruleFor(prefs, v, col.kind);
   if (!r) return null;
   if (prefs.colorMode === "bg") return { background: r.bg, color: "#0f172a" };
   if (prefs.colorMode === "text") return { color: r.fg };
@@ -167,6 +214,32 @@ export function cellColors(prefs: Prefs, col: Col, v: Cell | undefined): { backg
 }
 
 // ---------- parsing ----------
+
+/**
+ * Normalise a percentage column in place to plain numbers on a 0–100 scale.
+ * "92%" becomes 92; a column of bare fractions (0.92) is scaled up.
+ */
+function toPercent(cells: Cell[]) {
+  let sawSign = false;
+  for (let i = 0; i < cells.length; i++) {
+    const v = cells[i];
+    if (typeof v === "string" && /%\s*$/.test(v)) {
+      const n = pctNum(v);
+      if (n !== null) {
+        cells[i] = n;
+        sawSign = true;
+      }
+    }
+  }
+  if (sawSign) return;
+  const nums = cells.map(toNum).filter((n): n is number => n !== null);
+  if (nums.length && nums.every((n) => n >= 0 && n <= 1) && nums.some((n) => !Number.isInteger(n))) {
+    for (let i = 0; i < cells.length; i++) {
+      const n = toNum(cells[i]);
+      if (n !== null) cells[i] = Math.round(n * 10000) / 100;
+    }
+  }
+}
 
 export function docFromAoa(aoa: Cell[][], fileName: string): Doc {
   const rows = aoa.map((r) => (r || []).map((c) => (c === null || c === undefined ? "" : c)));
@@ -201,7 +274,9 @@ export function docFromAoa(aoa: Cell[][], fileName: string): Doc {
       return v ?? "";
     });
     if (!name && cells.every(isEmpty)) continue;
-    cols.push({ id: uid(), name: name || `עמודה ${c + 1}`, cells, hidden: false, color: false });
+    const kind = pctKind(name);
+    if (kind) toPercent(cells);
+    cols.push({ id: uid(), name: name || `עמודה ${c + 1}`, cells, hidden: false, color: false, kind });
   }
 
   // summary rows: rows where the "name" column (first mostly-text column) is empty
@@ -211,7 +286,7 @@ export function docFromAoa(aoa: Cell[][], fileName: string): Doc {
   });
   const summary = data.map((_, r) => (nameCol ? isEmpty(nameCol.cells[r]) : false));
 
-  cols = cols.map((col) => ({ ...col, color: isGradeCol(col, summary) }));
+  cols = cols.map((col) => ({ ...col, color: col.kind ? col.cells.some((v) => toNum(v) !== null) : isGradeCol(col, summary) }));
 
   return {
     title: title || fileName.replace(/\.[^.]+$/, ""),
@@ -265,6 +340,7 @@ export function mergeCols(doc: Doc, ids: string[], name?: string): { conflicts: 
     cells,
     hidden: false,
     color: sources.some((s) => s.color),
+    kind: sources[0].kind,
   };
   const firstIdx = doc.cols.findIndex((c) => ids.includes(c.id));
   doc.cols = doc.cols.filter((c) => !ids.includes(c.id));
@@ -313,7 +389,7 @@ export function ruleCounts(doc: Doc, prefs: Prefs, rows: number[]) {
     if (col.hidden || !col.color) continue;
     for (const r of rows) {
       if (doc.summary[r]) continue;
-      const rule = ruleFor(prefs, col.cells[r]);
+      const rule = ruleFor(prefs, col.cells[r], col.kind);
       if (rule) counts.set(rule.id, (counts.get(rule.id) || 0) + 1);
     }
   }

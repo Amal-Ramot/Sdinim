@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import type { Col, Doc } from "@/lib/model";
-import { docFromAoa, fmt, headerLabel, mergeCols, sortDoc } from "@/lib/model";
+import { docFromAoa, fmtCell, headerLabel, mergeCols, sortDoc } from "@/lib/model";
 import { readWorkbook, exportDoc, type Workbook } from "@/lib/xlsx-io";
 import { useHistory, usePrefs, useTheme } from "@/lib/store";
 import { ContextMenu, PromptDialog, ToastProvider, useToast, type MenuItem } from "./ui";
@@ -129,7 +129,7 @@ function App() {
     const q = query.trim();
     if (!q) return doc.rowOrder;
     const vis = doc.cols.filter((c) => !c.hidden);
-    return doc.rowOrder.filter((r) => doc.summary[r] || vis.some((c) => fmt(c.cells[r]).includes(q)));
+    return doc.rowOrder.filter((r) => doc.summary[r] || vis.some((c) => fmtCell(c, c.cells[r]).includes(q)));
   }, [doc, query]);
 
   const onLayout = useCallback((l: Layout) => {

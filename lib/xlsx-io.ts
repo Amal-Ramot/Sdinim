@@ -14,10 +14,23 @@ export async function readWorkbook(file: File): Promise<Workbook> {
   const XLSX = await load();
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array", cellStyles: false });
-  const sheets = wb.SheetNames.map((name) => ({
-    name,
-    aoa: XLSX.utils.sheet_to_json<Cell[]>(wb.Sheets[name], { header: 1, raw: true, defval: "" }),
-  })).filter((s) => s.aoa.length > 0);
+  const sheets = wb.SheetNames.map((name) => {
+    const ws = wb.Sheets[name];
+    const aoa = XLSX.utils.sheet_to_json<Cell[]>(ws, { header: 1, raw: true, defval: "", blankrows: true });
+    // Cells formatted as percentages are stored as fractions (0.92); keep them as "92%".
+    if (ws["!ref"]) {
+      const range = XLSX.utils.decode_range(ws["!ref"]);
+      for (const addr of Object.keys(ws)) {
+        if (addr[0] === "!") continue;
+        const cell = ws[addr];
+        if (cell?.t !== "n" || typeof cell.w !== "string" || !/%\s*$/.test(cell.w)) continue;
+        const { r, c } = XLSX.utils.decode_cell(addr);
+        const row = aoa[r - range.s.r];
+        if (row && c - range.s.c < row.length) row[c - range.s.c] = `${Math.round(cell.v * 10000) / 100}%`;
+      }
+    }
+    return { name, aoa };
+  }).filter((s) => s.aoa.length > 0);
   return { fileName: file.name, sheets };
 }
 
@@ -59,6 +72,7 @@ export async function exportDoc(doc: Doc, prefs: Prefs, rows: number[]) {
           font: { bold: !!doc.summary[r], color: colors?.color ? { rgb: hex(colors.color) } : undefined },
         };
         if (colors?.background) s.fill = { fgColor: { rgb: hex(colors.background) } };
+        if (n !== null && c.kind) return { v: n / 100, t: "n", z: Number.isInteger(n) ? "0%" : "0.0#%", s };
         if (n !== null && !/^0\d/.test(String(v))) return { v: n, t: "n", s };
         return { v: fmt(v), t: "s", s };
       }),
