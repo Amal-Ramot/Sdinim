@@ -74,9 +74,9 @@ export const RULE_PRESETS: Record<string, { name: string; rules: Omit<Rule, "id"
   three: {
     name: "שלושה טווחים",
     rules: [
-      { from: 0, to: 54, bg: "#fecaca", fg: "#991b1b", label: "נכשל" },
-      { from: 55, to: 79, bg: "#fef08a", fg: "#854d0e", label: "בינוני" },
-      { from: 80, to: 100, bg: "#bbf7d0", fg: "#166534", label: "גבוה" },
+      { from: 0, to: 60, bg: "#fecaca", fg: "#991b1b", label: "נמוך" },
+      { from: 61, to: 74, bg: "#fef08a", fg: "#854d0e", label: "בינוני" },
+      { from: 75, to: 100, bg: "#bfdbfe", fg: "#1e3a8a", label: "גבוה" },
     ],
   },
   excellence: {
@@ -91,7 +91,7 @@ export const RULE_PRESETS: Record<string, { name: string; rules: Omit<Rule, "id"
 export const withIds = (rules: Omit<Rule, "id">[]): Rule[] => rules.map((r) => ({ ...r, id: uid("r") }));
 
 export const DEFAULT_PREFS: Prefs = {
-  rules: withIds(RULE_PRESETS.traffic.rules),
+  rules: withIds(RULE_PRESETS.three.rules),
   colorMode: "bg",
   round: true,
   headerMode: "full",

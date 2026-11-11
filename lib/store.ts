@@ -54,7 +54,7 @@ export function useHistory() {
   };
 }
 
-const PREFS_KEY = "sdinim.prefs.v1";
+const PREFS_KEY = "sdinim.prefs.v2";
 
 /** User preferences (color rules, print setup) persisted per browser. */
 export function usePrefs() {
