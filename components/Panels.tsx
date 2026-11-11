@@ -3,7 +3,7 @@ import { DndContext, PointerSensor, KeyboardSensor, closestCenter, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToParent } from "./dnd-modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { useState } from "react";
+import { Fragment } from "react";
 import {
   Eye,
   EyeOff,
@@ -14,7 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Col, Doc, Prefs, Rule } from "@/lib/model";
-import { PCT_DEFAULTS, RULE_KEY, RULE_PRESETS, SET_LABEL, headerLabel, ruleCounts, uid, withIds, type RuleSet } from "@/lib/model";
+import { RULE_KEY, RULE_PRESETS, SET_LABEL, headerLabel, ruleCounts, uid, withIds, type RuleSet } from "@/lib/model";
 import { Segmented, Switch } from "./ui";
 import type { Layout } from "./PrintPage";
 
@@ -109,83 +109,75 @@ export function ColorsPanel({
   const sets = (["grade", "attend", "absent"] as RuleSet[]).filter(
     (s) => s === "grade" || doc.cols.some((c) => c.kind === s),
   );
-  const [picked, setPicked] = useState<RuleSet>("grade");
-  const set = sets.includes(picked) ? picked : "grade";
-  const key = RULE_KEY[set];
-  const rules = prefs[key];
-  const setRules = (next: Rule[]) => update({ [key]: next });
-  const setRule = (id: string, patch: Partial<Rule>) => setRules(rules.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   const colored = doc.cols.filter((c) => c.color && !c.hidden).length;
 
   return (
     <div className="panel">
-      {sets.length > 1 && (
-        <>
-          <Segmented value={set} onChange={setPicked} options={sets.map((s) => ({ value: s, label: SET_LABEL[s] }))} />
-          <p className="hint">לכל סוג עמודה טווחי צבע משלו. עמודות נוכחות, חיסור ואיחור מוצגות באחוזים.</p>
-        </>
-      )}
-      {set === "grade" ? (
-        <div className="presets">
-          {Object.entries(RULE_PRESETS).map(([k, p]) => (
-            <button key={k} className="preset" onClick={() => setRules(withIds(p.rules))}>
-              <span className="preset-swatches">
-                {p.rules.map((r, i) => (
-                  <i key={i} style={{ background: r.bg }} />
-                ))}
-              </span>
-              {p.name}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <button className="chip" onClick={() => setRules(withIds(PCT_DEFAULTS[set]))}>
-          <RotateCcw size={14} /> איפוס לברירת המחדל
-        </button>
-      )}
-
-      <h4 className="sub">טווחי צבע{set === "grade" ? "" : " (באחוזים)"}</h4>
-      <ul className="rules">
-        {rules.map((r) => (
-          <li key={r.id} className="rule" style={{ ["--rb" as string]: r.bg, ["--rf" as string]: r.fg }}>
-            <div className="rule-swatch">
-              <label title="צבע רקע">
-                <input type="color" value={r.bg} onChange={(e) => setRule(r.id, { bg: e.target.value })} />
-              </label>
-              <label title="צבע טקסט" className="fg">
-                <input type="color" value={r.fg} onChange={(e) => setRule(r.id, { fg: e.target.value })} />
-                A
-              </label>
-            </div>
-            <div className="rule-body">
-              <input
-                className="rule-label"
-                value={r.label}
-                placeholder="תווית"
-                onChange={(e) => setRule(r.id, { label: e.target.value })}
-              />
-              <div className="rule-range">
-                <span>מ־</span>
-                <input type="number" value={r.from} onChange={(e) => setRule(r.id, { from: Number(e.target.value) })} />
-                <span>עד</span>
-                <input type="number" value={r.to} onChange={(e) => setRule(r.id, { to: Number(e.target.value) })} />
-              </div>
-            </div>
-            <span className="rule-count" title="מספר תאים בטווח">
-              {counts.get(r.id) || 0}
+      <div className="presets">
+        {Object.entries(RULE_PRESETS).map(([k, p]) => (
+          <button key={k} className="preset" onClick={() => update({ rules: withIds(p.rules) })}>
+            <span className="preset-swatches">
+              {p.rules.map((r, i) => (
+                <i key={i} style={{ background: r.bg }} />
+              ))}
             </span>
-            <button className="icon-btn sm" onClick={() => setRules(rules.filter((x) => x.id !== r.id))} aria-label="מחיקת טווח">
-              <Trash2 size={15} />
-            </button>
-          </li>
+            {p.name}
+          </button>
         ))}
-      </ul>
-      <button
-        className="btn ghost wide"
-        onClick={() => setRules([...rules, { id: uid("r"), from: 0, to: 100, bg: "#e9d5ff", fg: "#581c87", label: "" }])}
-      >
-        <Plus size={16} /> הוספת טווח
-      </button>
+      </div>
+
+      {sets.map((set) => {
+        const key = RULE_KEY[set];
+        const rules = prefs[key];
+        const setRules = (next: Rule[]) => update({ [key]: next });
+        const setRule = (id: string, patch: Partial<Rule>) => setRules(rules.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+        return (
+          <Fragment key={set}>
+            <h4 className="sub">{sets.length > 1 ? `טווחי צבע · ${SET_LABEL[set]}` : "טווחי צבע"}</h4>
+        <ul className="rules">
+          {rules.map((r) => (
+            <li key={r.id} className="rule" style={{ ["--rb" as string]: r.bg, ["--rf" as string]: r.fg }}>
+              <div className="rule-swatch">
+                <label title="צבע רקע">
+                  <input type="color" value={r.bg} onChange={(e) => setRule(r.id, { bg: e.target.value })} />
+                </label>
+                <label title="צבע טקסט" className="fg">
+                  <input type="color" value={r.fg} onChange={(e) => setRule(r.id, { fg: e.target.value })} />
+                  A
+                </label>
+              </div>
+              <div className="rule-body">
+                <input
+                  className="rule-label"
+                  value={r.label}
+                  placeholder="תווית"
+                  onChange={(e) => setRule(r.id, { label: e.target.value })}
+                />
+                <div className="rule-range">
+                  <span>מ־</span>
+                  <input type="number" value={r.from} onChange={(e) => setRule(r.id, { from: Number(e.target.value) })} />
+                  <span>עד</span>
+                  <input type="number" value={r.to} onChange={(e) => setRule(r.id, { to: Number(e.target.value) })} />
+                </div>
+              </div>
+              <span className="rule-count" title="מספר תאים בטווח">
+                {counts.get(r.id) || 0}
+              </span>
+              <button className="icon-btn sm" onClick={() => setRules(rules.filter((x) => x.id !== r.id))} aria-label="מחיקת טווח">
+                <Trash2 size={15} />
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button
+          className="btn ghost wide"
+          onClick={() => setRules([...rules, { id: uid("r"), from: 0, to: 100, bg: "#e9d5ff", fg: "#581c87", label: "" }])}
+        >
+          <Plus size={16} /> הוספת טווח
+        </button>
+          </Fragment>
+        );
+      })}
 
       <h4 className="sub">אופן הצביעה</h4>
       <Segmented
