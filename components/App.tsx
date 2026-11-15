@@ -28,6 +28,7 @@ import {
 import type { Col, Doc } from "@/lib/model";
 import { docFromAoa, fmtCell, headerLabel, mergeCols, sortDoc } from "@/lib/model";
 import { readWorkbook, exportDoc, type Workbook } from "@/lib/xlsx-io";
+import { savePagePdf } from "@/lib/pdf";
 import { useHistory, usePrefs, useTheme } from "@/lib/store";
 import { ContextMenu, PromptDialog, ToastProvider, useToast, type MenuItem } from "./ui";
 import SheetTable from "./SheetTable";
@@ -217,6 +218,23 @@ function App() {
     requestAnimationFrame(() => window.print());
   };
 
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const doPdf = async () => {
+    const page = document.querySelector<HTMLElement>("#print-host .page");
+    if (!doc || !layout || !page || pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      await document.fonts?.ready;
+      const base = (doc.title || doc.fileName.replace(/\.[^.]+$/, "") || "סדין").replace(/[\\/:*?"<>|]+/g, " ").trim();
+      await savePagePdf(page, { w: layout.w, h: layout.h }, `${base}.pdf`);
+      toast("קובץ PDF נשמר");
+    } catch {
+      toast("לא הצלחנו ליצור PDF. אפשר להשתמש ב„הדפסה” ולבחור „שמירה כ-PDF”.", "warn");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   const doExport = async () => {
     if (!doc) return;
     await exportDoc(doc, prefs, rows);
@@ -339,7 +357,7 @@ function App() {
                 )}
                 {tab === "colors" && <ColorsPanel doc={doc} prefs={prefs} rows={rows} update={update} commit={commit} />}
                 {tab === "print" && (
-                  <PrintPanel doc={doc} prefs={prefs} update={update} commit={commit} layout={layout} onPrint={doPrint} />
+                  <PrintPanel doc={doc} prefs={prefs} update={update} commit={commit} layout={layout} onPrint={doPrint} onPdf={doPdf} pdfBusy={pdfBusy} />
                 )}
               </div>
             </aside>

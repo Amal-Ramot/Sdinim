@@ -5,6 +5,7 @@ import { restrictToParent } from "./dnd-modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import {
   Eye,
+  FileDown,
   EyeOff,
   GripVertical,
   Plus,
@@ -215,6 +216,8 @@ export function PrintPanel({
   commit,
   layout,
   onPrint,
+  onPdf,
+  pdfBusy,
 }: {
   doc: Doc;
   prefs: Prefs;
@@ -222,6 +225,8 @@ export function PrintPanel({
   commit: (m: (d: Doc) => void) => void;
   layout: Layout | null;
   onPrint: () => void;
+  onPdf: () => void;
+  pdfBusy: boolean;
 }) {
   return (
     <div className="panel">
@@ -306,6 +311,9 @@ export function PrintPanel({
 
       <button className="btn primary wide big" onClick={onPrint}>
         <Printer size={18} /> הדפסה על דף אחד
+      </button>
+      <button className="btn wide big" onClick={onPdf} disabled={pdfBusy || !layout}>
+        <FileDown size={18} /> {pdfBusy ? "יוצר PDF…" : "שמירה כ-PDF"}
       </button>
       <button className="link center" onClick={() => update({ margin: 8, fill: true, orient: "auto", density: "normal" })}>
         <RotateCcw size={13} /> איפוס הגדרות הדפסה
