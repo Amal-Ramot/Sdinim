@@ -37,7 +37,7 @@ export interface Rule {
 }
 
 export type ColorMode = "bg" | "text" | "both";
-export type HeaderMode = "full" | "first" | "clean";
+export type HeaderMode = "full" | "first" | "clean" | "subject";
 export type Paper = "A4" | "A3" | "Letter";
 export type Orient = "auto" | "portrait" | "landscape";
 
@@ -155,6 +155,21 @@ export function normalizeInput(s: string, pct = false): Cell {
   return n === null ? t : n;
 }
 
+/**
+ * Just the subject of a course header: "אנגלית 16471 יא4-יא9" → "אנגלית",
+ * "היסטוריה יא4-יא7" → "היסטוריה". Words are kept until the first course
+ * code, class name or group range; headers without those stay as they are.
+ */
+export function subjectName(line: string): string {
+  const words = line.trim().split(/\s+/);
+  const out: string[] = [];
+  for (const w of words) {
+    if (out.length && (/\d/.test(w) || /[-–]/.test(w) || /^\[.*\]$/.test(w) || /^(ז|ח|ט|י|יא|יב)['׳"״]?$/.test(w))) break;
+    out.push(w);
+  }
+  return out.join(" ") || line.trim();
+}
+
 export function headerLabel(name: string, mode: HeaderMode): string {
   const lines = name
     .split(/\r?\n/)
@@ -162,6 +177,7 @@ export function headerLabel(name: string, mode: HeaderMode): string {
     .filter(Boolean);
   if (!lines.length) return "";
   if (mode === "first") return lines[0];
+  if (mode === "subject") return subjectName(lines[0]);
   if (mode === "clean") return lines.filter((l) => !/^\[\d+\]$/.test(l)).join("\n");
   return lines.join("\n");
 }
