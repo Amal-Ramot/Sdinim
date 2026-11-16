@@ -57,6 +57,7 @@ export default function PrintPage({
       fit.style.width = "max-content";
       table.style.width = "";
       table.style.height = "";
+      table.style.removeProperty("--xpad");
       const w = fit.offsetWidth || 1;
       const h = fit.offsetHeight || 1;
       const m = prefs.margin;
@@ -74,23 +75,69 @@ export default function PrintPage({
       page.style.width = `${pw}mm`;
       page.style.height = `${ph - 0.6}mm`;
       page.style.padding = `${m}mm`;
+      // Fit with the zoom applied and measured, because text (especially the
+      // vertical headers) lays out slightly differently at each zoom level.
+      // Sizes are read in zoomed page pixels; `view` undoes any CSS transform
+      // around the page (the on-screen preview is scaled down).
       let z = Math.min(iw / w, ih / h);
-      if (prefs.fill) {
-        // Stretch rows to the full page height only. Columns are never widened,
-        // so each one stays exactly as wide as its content.
-        const h2 = fit.offsetHeight;
-        const target = ih / z;
-        if (h2 < target - 1) table.style.height = `${table.offsetHeight + (target - h2)}px`;
-      }
-      z = Math.min(z, iw / fit.offsetWidth, ih / fit.offsetHeight) * 0.997;
       fit.style.zoom = String(z);
+      const view = page.getBoundingClientRect().width / page.offsetWidth || 1;
+      const size = () => {
+        const r = fit.getBoundingClientRect();
+        return { w: r.width / view, h: r.height / view };
+      };
+      const cols = table.tHead?.rows[0]?.cells.length || 1;
+      let xpad = 0;
+      let rowsH = 0;
+      for (let i = 0; i < 8; i++) {
+        let s = size();
+        if (s.w > iw + 0.5 || s.h > ih + 0.5) {
+          z *= Math.min(iw / s.w, ih / s.h) * 0.998;
+          fit.style.zoom = String(z);
+          continue;
+        }
+        if (!prefs.fill) break;
+        // Share the leftover space out: extra width evenly between all columns
+        // (as side padding, so every column grows by the same amount) and extra
+        // height between the rows.
+        const dw = iw - s.w;
+        if (dw > 1) {
+          xpad += dw / z / (2 * cols);
+          table.style.setProperty("--xpad", `${xpad}px`);
+          s = size();
+        }
+        const dh = ih - s.h;
+        if (dh > 1) {
+          rowsH = (rowsH || table.offsetHeight) + dh / z;
+          table.style.height = `${rowsH}px`;
+        }
+        if (dw <= 1 && dh <= 1) break;
+      }
       cb.current?.({ zoom: z, orient, w: pw, h: ph });
     };
+    // Re-fit whenever the table's own size changes for reasons other than our
+    // fitting (e.g. a web font finishing loading after the first layout).
+    let last = "";
+    const fitAgain = () => {
+      const f = fitRef.current;
+      if (!f) return;
+      const now = `${f.offsetWidth}x${f.offsetHeight}`;
+      if (now !== last) {
+        run();
+        last = `${f.offsetWidth}x${f.offsetHeight}`;
+      }
+    };
     run();
+    last = `${fitRef.current?.offsetWidth}x${fitRef.current?.offsetHeight}`;
+    const ro = new ResizeObserver(fitAgain);
+    if (fitRef.current) ro.observe(fitRef.current);
     let alive = true;
-    document.fonts?.ready.then(() => alive && run());
+    document.fonts?.ready.then(() => alive && (run(), (last = `${fitRef.current?.offsetWidth}x${fitRef.current?.offsetHeight}`)));
+    document.fonts?.addEventListener?.("loadingdone", fitAgain);
     return () => {
       alive = false;
+      ro.disconnect();
+      document.fonts?.removeEventListener?.("loadingdone", fitAgain);
     };
   }, [doc, prefs, rows]);
 

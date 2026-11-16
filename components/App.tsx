@@ -5,7 +5,6 @@ import {
   ArrowLeftRight,
   ArrowUpNarrowWide,
   Columns3,
-  Download,
   EyeOff,
   FileSpreadsheet,
   FileText,
@@ -27,7 +26,7 @@ import {
 } from "lucide-react";
 import type { Col, Doc } from "@/lib/model";
 import { docFromAoa, fmtCell, headerLabel, mergeCols, sortDoc } from "@/lib/model";
-import { readWorkbook, exportDoc, type Workbook } from "@/lib/xlsx-io";
+import { readWorkbook, type Workbook } from "@/lib/xlsx-io";
 import { savePagePdf } from "@/lib/pdf";
 import { useHistory, usePrefs, useTheme } from "@/lib/store";
 import { ContextMenu, PromptDialog, ToastProvider, useToast, type MenuItem } from "./ui";
@@ -235,12 +234,6 @@ function App() {
     }
   };
 
-  const doExport = async () => {
-    if (!doc) return;
-    await exportDoc(doc, prefs, rows);
-    toast("קובץ Excel עם הצבעים הורד");
-  };
-
   // ---------- render ----------
   const visCount = doc?.cols.filter((c) => !c.hidden).length ?? 0;
 
@@ -307,9 +300,6 @@ function App() {
           </button>
           {doc && (
             <>
-              <button className="btn ghost" onClick={doExport}>
-                <Download size={16} /> <span className="hide-sm">Excel</span>
-              </button>
               <button className="btn primary" onClick={doPrint}>
                 <Printer size={16} /> <span className="hide-sm">הדפסה</span>
               </button>

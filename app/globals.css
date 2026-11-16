@@ -992,17 +992,21 @@ input[type="range"] {
   background: #eef1f8;
 }
 
-.density-compact th,
-.density-compact td {
-  padding: 2px 3px;
+.sheet th,
+.sheet td {
+  padding: var(--pady, 4px) calc(var(--padx, 5px) + var(--xpad, 0px));
 }
-.density-normal th,
-.density-normal td {
-  padding: 4px 5px;
+.density-compact {
+  --pady: 2px;
+  --padx: 3px;
 }
-.density-airy th,
-.density-airy td {
-  padding: 8px 9px;
+.density-normal {
+  --pady: 4px;
+  --padx: 5px;
+}
+.density-airy {
+  --pady: 8px;
+  --padx: 9px;
 }
 
 /* editor flavour */
