@@ -298,7 +298,7 @@ export function PrintPanel({
           { value: "full", label: "מלא" },
           { value: "clean", label: "ללא קודים" },
           { value: "first", label: "שורה ראשונה" },
-          { value: "subject", label: "רק מקצוע" },
+          { value: "subject", label: "מקצוע ומורה" },
         ]}
       />
 

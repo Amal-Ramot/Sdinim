@@ -177,7 +177,11 @@ export function headerLabel(name: string, mode: HeaderMode): string {
     .filter(Boolean);
   if (!lines.length) return "";
   if (mode === "first") return lines[0];
-  if (mode === "subject") return subjectName(lines[0]);
+  if (mode === "subject") {
+    // subject + teacher (the teacher is the line after the course line, if any)
+    const teacher = lines.slice(1).find((l) => !/^\[.*\]$/.test(l));
+    return teacher ? `${subjectName(lines[0])}\n${teacher}` : subjectName(lines[0]);
+  }
   if (mode === "clean") return lines.filter((l) => !/^\[\d+\]$/.test(l)).join("\n");
   return lines.join("\n");
 }
