@@ -63,7 +63,11 @@ export function usePrefs() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PREFS_KEY);
-      if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) });
+      if (raw) {
+        const saved = { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+        if (saved.paper !== "A4" && saved.paper !== "A3") saved.paper = "A4";
+        setPrefs(saved);
+      }
     } catch {}
     loaded.current = true;
   }, []);

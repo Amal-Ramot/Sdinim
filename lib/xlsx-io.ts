@@ -1,5 +1,5 @@
 import type { Cell, Doc, Prefs } from "./model";
-import { cellColors, fmt, headerLabel, toNum } from "./model";
+import { cellColors, fmt, headerLabel, toNum, verticalHeader } from "./model";
 
 type XLSXMod = typeof import("xlsx-js-style");
 let mod: Promise<XLSXMod> | null = null;
@@ -55,7 +55,7 @@ export async function exportDoc(doc: Doc, prefs: Prefs, rows: number[]) {
       s: {
         font: { bold: true },
         fill: { fgColor: { rgb: "E2E8F0" } },
-        alignment: { horizontal: "center", vertical: "center", wrapText: true, readingOrder: 2, textRotation: prefs.vertical && c.color ? 90 : 0 },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true, readingOrder: 2, textRotation: verticalHeader(c, prefs) ? 90 : 0 },
         border,
       },
     })),

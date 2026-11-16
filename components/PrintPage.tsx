@@ -1,12 +1,11 @@
 "use client";
 import { useLayoutEffect, useRef } from "react";
 import type { Doc, Prefs } from "@/lib/model";
-import { cellColors, fmtCell, headerLabel, ruleCounts } from "@/lib/model";
+import { cellColors, fmtCell, headerLabel, ruleCounts, verticalHeader } from "@/lib/model";
 
 export const PAPER_MM: Record<Prefs["paper"], [number, number]> = {
   A4: [210, 297],
   A3: [297, 420],
-  Letter: [216, 279],
 };
 const MM = 96 / 25.4;
 
@@ -18,7 +17,7 @@ export interface Layout {
 }
 
 export function pageSize(prefs: Prefs, orient: "portrait" | "landscape") {
-  const [a, b] = PAPER_MM[prefs.paper];
+  const [a, b] = PAPER_MM[prefs.paper] ?? PAPER_MM.A4;
   return orient === "landscape" ? { w: b, h: a } : { w: a, h: b };
 }
 
@@ -77,8 +76,8 @@ export default function PrintPage({
       page.style.padding = `${m}mm`;
       let z = Math.min(iw / w, ih / h);
       if (prefs.fill) {
-        fit.style.width = `${iw / z}px`;
-        table.style.width = "100%";
+        // Stretch rows to the full page height only. Columns are never widened,
+        // so each one stays exactly as wide as its content.
         const h2 = fit.offsetHeight;
         const target = ih / z;
         if (h2 < target - 1) table.style.height = `${table.offsetHeight + (target - h2)}px`;
@@ -109,7 +108,7 @@ export default function PrintPage({
             <tr>
               {vis.map((c) => (
                 <th key={c.id} className={c.color ? "grade" : undefined}>
-                  <div className={`th-in${prefs.vertical && c.color ? " vertical" : ""}`}>
+                  <div className={`th-in${verticalHeader(c, prefs) ? " vertical" : ""}`}>
                     <span className="th-label">{headerLabel(c.name, prefs.headerMode)}</span>
                   </div>
                 </th>

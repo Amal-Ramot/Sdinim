@@ -262,7 +262,6 @@ export function PrintPanel({
         options={[
           { value: "A4", label: "A4" },
           { value: "A3", label: "A3" },
-          { value: "Letter", label: "Letter" },
         ]}
       />
       <label className="lbl">כיוון</label>
@@ -303,8 +302,8 @@ export function PrintPanel({
       />
 
       <div className="switches">
-        <Switch checked={prefs.fill} onChange={(v) => update({ fill: v })} label="מתיחה למילוי כל הדף" hint="הטבלה תכסה את כל שטח ההדפסה" />
-        <Switch checked={prefs.vertical} onChange={(v) => update({ vertical: v })} label="כותרות ציונים אנכיות" hint="חוסך רוחב ומגדיל את הטבלה" />
+        <Switch checked={prefs.fill} onChange={(v) => update({ fill: v })} label="מתיחה לגובה הדף" hint="השורות נמתחות לגובה הדף, העמודות נשארות צמודות לטקסט" />
+        <Switch checked={prefs.vertical} onChange={(v) => update({ vertical: v })} label="כותרות אנכיות" hint="עמודות צרות יותר, ברוחב התוכן בלבד" />
         <Switch checked={prefs.zebra} onChange={(v) => update({ zebra: v })} label="פסי זברה" />
         <Switch checked={prefs.showTitle} onChange={(v) => update({ showTitle: v })} label="הצגת כותרת" />
         <Switch checked={prefs.showLegend} onChange={(v) => update({ showLegend: v })} label="מקרא צבעים" />

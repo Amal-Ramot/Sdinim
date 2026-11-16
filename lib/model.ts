@@ -38,7 +38,7 @@ export interface Rule {
 
 export type ColorMode = "bg" | "text" | "both";
 export type HeaderMode = "full" | "first" | "clean" | "subject";
-export type Paper = "A4" | "A3" | "Letter";
+export type Paper = "A4" | "A3";
 export type Orient = "auto" | "portrait" | "landscape";
 
 export interface Prefs {
@@ -180,10 +180,24 @@ export function headerLabel(name: string, mode: HeaderMode): string {
   if (mode === "subject") {
     // subject + teacher (the teacher is the line after the course line, if any)
     const teacher = lines.slice(1).find((l) => !/^\[.*\]$/.test(l));
-    return teacher ? `${subjectName(lines[0])}\n${teacher}` : subjectName(lines[0]);
+    return teacher ? `${subjectName(lines[0])} - ${teacher}` : subjectName(lines[0]);
   }
   if (mode === "clean") return lines.filter((l) => !/^\[\d+\]$/.test(l)).join("\n");
   return lines.join("\n");
+}
+
+/**
+ * Whether a column's header is drawn vertically. Grade columns always are (when
+ * the option is on); other columns only when the header text is wider than any
+ * value in the column, so the column can shrink to the width of its data.
+ */
+export function verticalHeader(col: Col, prefs: Prefs): boolean {
+  if (!prefs.vertical) return false;
+  if (col.color) return true;
+  const label = headerLabel(col.name, prefs.headerMode);
+  const labelLen = Math.max(...label.split("\n").map((l) => l.length));
+  const dataLen = Math.max(0, ...col.cells.map((v) => fmtCell(col, v).length));
+  return labelLen >= 4 && labelLen > dataLen + 1;
 }
 
 export function ruleFor(prefs: Prefs, v: Cell | undefined): Rule | null {

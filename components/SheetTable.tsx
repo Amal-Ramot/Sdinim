@@ -5,7 +5,7 @@ import { SortableContext, horizontalListSortingStrategy, useSortable } from "@dn
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, EllipsisVertical } from "lucide-react";
 import type { Col, Doc, Prefs } from "@/lib/model";
-import { cellColors, fmt, fmtCell, headerLabel, normalizeInput } from "@/lib/model";
+import { cellColors, fmt, fmtCell, headerLabel, normalizeInput, verticalHeader } from "@/lib/model";
 
 interface Props {
   doc: Doc;
@@ -34,7 +34,7 @@ function SortableTh({
     transition,
     zIndex: isDragging ? 5 : undefined,
   };
-  const vertical = prefs.vertical && col.color;
+  const vertical = verticalHeader(col, prefs);
   return (
     <th
       ref={setNodeRef}
